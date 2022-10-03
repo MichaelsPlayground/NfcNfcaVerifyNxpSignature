@@ -1,4 +1,4 @@
-package de.androidcrypto.nfcnfcaverifyultralightev1signature;
+package de.androidcrypto.nfcnfcaverifynxpsignature;
 
 public class Utils {
 

@@ -1,4 +1,4 @@
-package de.androidcrypto.nfcnfcaverifyultralightev1signature;
+package de.androidcrypto.nfcnfcaverifynxpsignature;
 
 import android.content.Context;
 import android.nfc.NfcAdapter;
@@ -33,13 +33,11 @@ import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity implements NfcAdapter.ReaderCallback {
 
-    EditText tagId, tagSignature, publicKeyNxp, readResult;
+    EditText tagId, tagSignature, tagType, publicKeyNxp, readResult;
     private NfcAdapter mNfcAdapter;
-    byte[] tagIdByte, tagSignatureByte, publicKeyByte;
+    byte[] tagIdByte, tagSignatureByte;
+    String identifiedNfcTagType = "";
     boolean signatureVerfied = false;
-
-    final static String publicKeyNxpX = "494E1A386D3D3CFE3DC10E5DE68A499B";
-    final static String publicKeyNxpY = "1C202DB5B132393E89ED19FE5BE8BC61";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,13 +46,12 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
 
         tagId = findViewById(R.id.etVerifyTagId);
         tagSignature = findViewById(R.id.etVerifySignature);
+        tagType = findViewById(R.id.etVerifyTagType);
         publicKeyNxp = findViewById(R.id.etVerifyPublicKey);
         readResult = findViewById(R.id.etVerifyResult);
 
         mNfcAdapter = NfcAdapter.getDefaultAdapter(this);
 
-        //publicKeyNxp.setText("04494E1A386D3D3CFE3DC10E5DE68A499B1C202DB5B132393E89ED19FE5BE8BC61"); // NTAG21x
-        publicKeyNxp.setText("0490933bdcd6e99b4e255e3da55389a827564e11718e017292faf23226a96614b8"); // Ultralight EV1
     }
 
     // This method is run in another thread when a card is discovered
@@ -92,21 +89,21 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
 
                 nfcA.connect();
 
-                // check that the tag is an Ultralight EV1 manufactured by NXP - stop if not
-                System.out.println("*** tagId: " + Utils.bytesToHex(tag.getId()));
-                /*
-                String ntagVersion = NfcIdentifyNtag.checkNtagType(nfcA, tag.getId());
-                if (ntagVersion.equals("0")) {
+                // check that the tag is a NTAG21x or Ultralight EV1 manufactured by NXP - stop if not
+                identifiedNfcTagType = NfcIdentifyNxpTags.checkNxpTagType(nfcA, tag.getId());
+                runOnUiThread(() -> {
+                    tagType.setText(NfcIdentifyNxpTags.getidentifiedNxpTagType());
+                });
+                if (identifiedNfcTagType.equals("0")) {
                     runOnUiThread(() -> {
-                        readResult.setText("NFC tag is NOT of type NXP NTAG213/215/216");
+                        readResult.setText("NFC tag is NOT of type NXP NTAG213/215/216 or Ultralight EV1");
                         Toast.makeText(getApplicationContext(),
-                                "NFC tag is NOT of type NXP NTAG213/215/216",
+                                "NFC tag is NOT of type NXP NTAG213/215/216 or Ultralight EV",
                                 Toast.LENGTH_SHORT).show();
                     });
                     return;
                 }
-
-                 */
+                System.out.println("*** identifiedNfcTagType: " + identifiedNfcTagType);
 
                 // tag ID
                 tagIdByte = tag.getId();
@@ -167,8 +164,38 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
         }
 
         // now we are going to verify
-        // get the public key
-        String publicKeyString = publicKeyNxp.getText().toString();
+        // get the public key depending on the identified tag type
+        String publicKeyNxpNtag21x = "04494E1A386D3D3CFE3DC10E5DE68A499B1C202DB5B132393E89ED19FE5BE8BC61"; // NTAG21x
+        String publicKeyNxpUltralightEv1 = "0490933bdcd6e99b4e255e3da55389a827564e11718e017292faf23226a96614b8"; // Ultralight EV1
+        String publicKeyString = "";
+        switch (identifiedNfcTagType) {
+            case "213": {
+                publicKeyString = publicKeyNxpNtag21x;
+                break;
+            }
+            case "215": {
+                publicKeyString = publicKeyNxpNtag21x;
+                break;
+            }
+            case "216": {
+                publicKeyString = publicKeyNxpNtag21x;
+                break;
+            }
+            case "ultralightev1s": {
+                publicKeyString = publicKeyNxpUltralightEv1;
+                break;
+            }
+            case "ultralightev1l": {
+                publicKeyString = publicKeyNxpUltralightEv1;
+                break;
+            }
+        }
+        String finalPublicKeyString = publicKeyString;
+        runOnUiThread(() -> {
+            publicKeyNxp.setText(finalPublicKeyString);
+
+        });
+
         try {
             signatureVerfied = checkEcdsaSignature(publicKeyString, tagSignatureByte, tagIdByte);
         } catch (NoSuchAlgorithmException e) {
@@ -189,8 +216,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
     public static boolean checkEcdsaSignature(final ECPublicKeySpec
                                                       ecPubKey, final byte[]
                                                       signature, final byte[] data)
-            throws NoSuchAlgorithmException
-    {
+            throws NoSuchAlgorithmException {
         KeyFactory keyFac = null;
         try {
             keyFac = KeyFactory.getInstance("EC");
@@ -212,6 +238,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
 
         return false;
     }
+
     public static ECPublicKeySpec getEcPubKey(final String key, final
     ECParameterSpec
             curve) {
