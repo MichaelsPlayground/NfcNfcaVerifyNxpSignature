@@ -16,7 +16,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="10dp"
-            android:text="This app reads the tag id and the signature and verifys it with the Public Key for NXP tags."
+            android:text="This app reads the tag id and the signature and verifies it with the Public Key for NXP tags."
             android:textAlignment="center"
             android:textSize="20sp"
             android:textStyle="bold" />

@@ -98,7 +98,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                     runOnUiThread(() -> {
                         readResult.setText("NFC tag is NOT of type NXP NTAG213/215/216 or Ultralight EV1");
                         Toast.makeText(getApplicationContext(),
-                                "NFC tag is NOT of type NXP NTAG213/215/216 or Ultralight EV",
+                                "NFC tag is NOT of type NXP NTAG213/215/216 or Ultralight EV1",
                                 Toast.LENGTH_SHORT).show();
                     });
                     return;
