@@ -101,8 +101,14 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                                 "NFC tag is NOT of type NXP NTAG213/215/216 or Ultralight EV1",
                                 Toast.LENGTH_SHORT).show();
                     });
+                    // try to identify the card using ATQA
+                    runOnUiThread(() -> {
+                        String message = "identified so far: " + identifiedNfcTagType;
+                        tagType.setText(message);
+                    });
                     return;
                 }
+
                 System.out.println("*** identifiedNfcTagType: " + identifiedNfcTagType);
 
                 // tag ID
@@ -116,6 +122,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 try {
                     String commandString = "3C00"; // read signature
                     byte[] commandByte = Utils.hexStringToByteArray(commandString);
+                    System.out.println("commandByte: " + Utils.bytesToHex(commandByte));
                     try {
                         response = nfcA.transceive(commandByte); // response should be 16 bytes = 4 pages
                         if (response == null) {
@@ -157,6 +164,12 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                         e.printStackTrace();
                     }
                 }
+            } else {
+                runOnUiThread(() -> {
+                    Toast.makeText(getApplicationContext(),
+                            "NFC tag is NOT Nfca compatible",
+                            Toast.LENGTH_SHORT).show();
+                });
             }
         } catch (IOException e) {
             writeToUiAppend(readResult, "ERROR: IOException " + e.toString());
@@ -165,8 +178,10 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
 
         // now we are going to verify
         // get the public key depending on the identified tag type
-        String publicKeyNxpNtag21x = "04494E1A386D3D3CFE3DC10E5DE68A499B1C202DB5B132393E89ED19FE5BE8BC61"; // NTAG21x
-        String publicKeyNxpUltralightEv1 = "0490933bdcd6e99b4e255e3da55389a827564e11718e017292faf23226a96614b8"; // Ultralight EV1
+        String publicKeyNxpNtag21x =          "04494E1A386D3D3CFE3DC10E5DE68A499B1C202DB5B132393E89ED19FE5BE8BC61"; // NTAG21x
+        String publicKeyNxpUltralightEv1 =    "0490933bdcd6e99b4e255e3da55389a827564e11718e017292faf23226a96614b8"; // Ultralight EV1
+        //String publicKeyNxpMifareClassicEv1 = "04FFB5EAD81E248DA78F079311F500247EF2BF977A48964BBD32780DA4C8C386F9"; // Mifare Classic EV1
+
         String publicKeyString = "";
         switch (identifiedNfcTagType) {
             case "213": {

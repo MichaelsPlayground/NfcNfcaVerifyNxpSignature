@@ -89,6 +89,19 @@ public class NfcIdentifyNxpTags {
             (byte) 0x0E, // storage size = 144 bytes
             (byte) 0x03  // protocol type = ISO/IEC 14443-3 compliant
     };
+    // data show here are from NXP Mifare Classic EV1 data sheet
+    // https://www.nxp.com/docs/en/data-sheet/MF1S50YYX_V1.pdf
+    // NOTE: THIS IS NOT WORKING !!!!
+    private static byte[] mifareClassicEv1_M0UL11VersionData = new byte[]{
+            (byte) 0x00, // fixed header
+            (byte) 0x04, // vendor ID, 04h = NXP
+            (byte) 0x03, // product type = MIFARE Ultralight
+            (byte) 0x01, // product subtype = 17 pF
+            (byte) 0x01, // major product version 1
+            (byte) 0x00, // minor product version V0
+            (byte) 0x0B, // storage size = 888 bytes
+            (byte) 0x03  // protocol type = ISO/IEC 14443-3 compliant
+    };
 
 
     // returns 213/215/216 if tag is found or 0 when not detected in case of NTAG21x
@@ -107,6 +120,7 @@ public class NfcIdentifyNxpTags {
                     (byte) 0x30, // READ
                     (byte) 0x00  // page address
             });
+            System.out.println("check read response1: " + Utils.bytesToHex(response));
             // only check for byte 00 - 03h means NXP...
             byte[] uid0 = Arrays.copyOfRange(response, 0, 1);
             if (!Arrays.equals(uid0, new byte[]{(byte) 0x04})) {
@@ -116,6 +130,7 @@ public class NfcIdentifyNxpTags {
             response = nfca.transceive(new byte[] {
                     (byte) 0x60 // GET VERSION
             });
+            System.out.println("check read version response: " + Utils.bytesToHex(response));
             if (Arrays.equals(response, ntag213VersionData)) {
                 returnCode = "213";
                 identifiedNxpTagType = "NTAG213";
@@ -159,9 +174,27 @@ public class NfcIdentifyNxpTags {
                 identifiedNxpTagMemoryBytes = 144;
             }
         } catch (IOException e) {
+            System.out.println("read version failed - no NTAG21x or Mifare Ultralight EV1 card");
+            // try another way for Mifare Classic EV1
+            returnCode = checkNxpMifareClassicEv1TagType(nfca, ntagId);
+            identifiedNxpTagType = "Classic EV1";
+            System.out.println("newReturnCode: " + returnCode);
             e.printStackTrace();
+
         }
         return returnCode;
+    }
+
+    private static String checkNxpMifareClassicEv1TagType(NfcA nfca, byte[] ntagId) {
+        byte[] atqa = nfca.getAtqa();
+        short sak = nfca.getSak();
+        System.out.println("atqa: " + Utils.bytesToHex(atqa));
+        System.out.println("sak: " + sak);
+        if (sak == 8) {
+            return "mifareclassicev1";
+        } else {
+            return "0";
+        }
     }
 
     public static String getidentifiedNxpTagType() {
